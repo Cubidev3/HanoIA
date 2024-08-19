@@ -1,4 +1,5 @@
-from hanoi_game import HanoiProblem, default, HanoiMove
+from agents import Agent
+from hanoi_game import HanoiProblem, default, HanoiMove, HanoiAgentProgram, HanoiEnvironment
 from search import breadth_first_tree_search, Node, depth_limited_search
 
 def print_node(node):
@@ -8,6 +9,16 @@ def print_node(node):
     print_node(node.parent)
     print(node.state)
 
-problem = HanoiProblem()
-node = depth_limited_search(problem, 50)
-print_node(node)
+environment = HanoiEnvironment(default())
+
+program = HanoiAgentProgram()
+agent = Agent(program)
+
+environment.add_thing(agent)
+
+for i in range(20):
+    print('\n')
+    print("Desempenho: {}".format(agent.performance))
+    print(f"hanoi:  {environment.hanoi}")
+
+    environment.step()

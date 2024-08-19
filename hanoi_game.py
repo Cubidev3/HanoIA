@@ -1,6 +1,8 @@
 from copy import deepcopy
 
-from search import Problem
+from agents import Environment
+from search import Problem, SimpleProblemSolvingAgentProgram, depth_limited_search
+
 
 class HanoiMove:
     def __init__(self, from_tower, to_tower):
@@ -12,8 +14,10 @@ class HanoiMove:
 
 
 def default():
-    return HanoiGame([[5, 4, 3, 2, 1], [], []])
+    return HanoiGame([[3, 2, 1], [], []])
 
+def finished():
+    return HanoiGame([[], [], [3, 2, 1]])
 
 class HanoiGame:
     def __init__(self, towers):
@@ -74,9 +78,6 @@ class HanoiGame:
 
 
 class HanoiProblem(Problem):
-    def __init__(self):
-        super().__init__(default())
-
     def actions(self, state):
         return state.get_possible_moves()
 
@@ -87,3 +88,41 @@ class HanoiProblem(Problem):
 
     def goal_test(self, state):
         return state.is_complete()
+
+
+class HanoiAgentProgram(SimpleProblemSolvingAgentProgram):
+    def update_state(self, state, percept):
+        return percept
+
+    def formulate_goal(self, state):
+        return finished()
+
+    def formulate_problem(self, state, goal):
+        return HanoiProblem(state, goal)
+
+    def search(self, problem):
+        node = depth_limited_search(problem, 15)
+        if node in ("failure", "cutoff", None):
+            return None
+
+        return node.solution()
+
+
+class HanoiEnvironment(Environment):
+    def __init__(self, initial):
+        super().__init__()
+        self.hanoi: HanoiGame = initial
+
+    def percept(self, agent):
+        return self.hanoi
+
+    def execute_action(self, agent, action):
+        if action is None:
+            return
+
+        self.hanoi.apply_move(action)
+        if self.hanoi.is_complete():
+            agent.performance += 10
+            return
+
+        agent.performance -= 1
