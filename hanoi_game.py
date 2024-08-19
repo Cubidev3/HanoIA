@@ -1,8 +1,9 @@
 from copy import deepcopy
 
 from agents import Environment
-from search import Problem, SimpleProblemSolvingAgentProgram, depth_limited_search
+from search import Problem, SimpleProblemSolvingAgentProgram, depth_limited_search, astar_search, Node
 
+# Victor Neony da Silva - 202200014570
 
 class HanoiMove:
     def __init__(self, from_tower, to_tower):
@@ -14,10 +15,7 @@ class HanoiMove:
 
 
 def default():
-    return HanoiGame([[3, 2, 1], [], []])
-
-def finished():
-    return HanoiGame([[], [], [3, 2, 1]])
+    return HanoiGame([[5, 4, 3, 2, 1], [], []])
 
 class HanoiGame:
     def __init__(self, towers):
@@ -61,6 +59,40 @@ class HanoiGame:
     def get_tower(self, index):
         return self.towers[index]
 
+    def get_tower_cost(self, index):
+        return (len(self.towers) - index - 1) * 2
+
+    def get_disk_count(self):
+        highest = 0
+        for tower in self.towers:
+            for disk in tower:
+                highest = disk if disk > highest else highest
+
+        return highest
+
+    def get_disks(self):
+        disks = []
+        for tower in self.towers:
+            for disk in tower:
+                disks.append(disk)
+
+        disks.sort(reverse=True)
+        return disks
+
+    def finished(self):
+        towers = [[]] * (len(self.towers) - 1)
+        towers.append(self.get_disks())
+        return towers
+
+    def get_cost(self):
+        cost = 0
+        for i in range(len(self.towers)):
+            tower = self.get_tower(i)
+            if len(tower) != 0:
+                cost += (i+1) * self.get_tower_cost(i)
+
+        return cost
+
     def is_complete(self):
         empty_towers = 0
         for tower in self.towers:
@@ -72,9 +104,32 @@ class HanoiGame:
 
         return len(self.towers) - empty_towers <= 1
 
+    def as_tuple(self):
+        disks = [0] * self.get_disk_count()
+        for tower_index in range(len(self.towers)):
+            tower = self.get_tower(tower_index)
+
+            for disk in tower:
+                disks[disk - 1] = tower_index
+
+        return tuple(disks)
+
 
     def __str__(self):
         return "{}".format(self.towers)
+
+    def __lt__(self, other):
+        return self.get_cost() < other.get_cost()
+
+    def __eq__(self, other):
+        if not isinstance(other, HanoiGame):
+            return False
+
+        result = self.as_tuple() == other.as_tuple()
+        return result
+
+    def __hash__(self):
+        return hash(self.as_tuple())
 
 
 class HanoiProblem(Problem):
@@ -90,12 +145,12 @@ class HanoiProblem(Problem):
         return state.is_complete()
 
 
-class HanoiAgentProgram(SimpleProblemSolvingAgentProgram):
+class HanoiAgentDepthLimitedProgram(SimpleProblemSolvingAgentProgram):
     def update_state(self, state, percept):
         return percept
 
     def formulate_goal(self, state):
-        return finished()
+        return state.finished()
 
     def formulate_problem(self, state, goal):
         return HanoiProblem(state, goal)
@@ -106,6 +161,31 @@ class HanoiAgentProgram(SimpleProblemSolvingAgentProgram):
             return None
 
         return node.solution()
+
+
+class HanoiAgentAstarProgram(SimpleProblemSolvingAgentProgram):
+    def update_state(self, state, percept):
+        return percept
+
+    def formulate_goal(self, state):
+        return state.finished()
+
+    def formulate_problem(self, state, goal):
+        return HanoiProblem(state, goal)
+
+    def search(self, problem):
+        node = astar_search(problem, astar_node_heuristic)
+        if node in ("failure", "cutoff", None):
+            return None
+
+        return node.solution()
+
+
+def astar_node_heuristic(node: Node):
+    if node in ("failure", "cutoff", None):
+        return 0
+
+    return node.state.get_cost()
 
 
 class HanoiEnvironment(Environment):

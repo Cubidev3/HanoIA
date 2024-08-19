@@ -1,24 +1,42 @@
-from agents import Agent
-from hanoi_game import HanoiProblem, default, HanoiMove, HanoiAgentProgram, HanoiEnvironment
-from search import breadth_first_tree_search, Node, depth_limited_search
+from agents import Agent, Environment
+from hanoi_game import HanoiProblem, default, HanoiMove, HanoiAgentDepthLimitedProgram, HanoiEnvironment, \
+    HanoiAgentAstarProgram, HanoiGame
 
-def print_node(node):
-    if node in (None, 'cutoff', 'failure'):
-        return
+# Victor Neony da Silva - 202200014570
 
-    print_node(node.parent)
-    print(node.state)
+def run_environment(environment: Environment, agent: Agent):
+    for i in range(50):
+        print('\n')
+        print("Desempenho: {}".format(agent.performance))
+        print(f"hanoi:  {environment.hanoi}")
 
-environment = HanoiEnvironment(default())
+        environment.step()
 
-program = HanoiAgentProgram()
-agent = Agent(program)
+def agent_uninformed():
+    game = HanoiGame([[3, 2, 1], [], []])
+    environment = HanoiEnvironment(game)
 
-environment.add_thing(agent)
+    program = HanoiAgentDepthLimitedProgram()
+    agent = Agent(program)
 
-for i in range(20):
-    print('\n')
-    print("Desempenho: {}".format(agent.performance))
-    print(f"hanoi:  {environment.hanoi}")
+    environment.add_thing(agent)
+    run_environment(environment, agent)
 
-    environment.step()
+
+def agent_informed():
+    game = default() # [[5, 4, 3, 2, 1], [], []]
+    environment = HanoiEnvironment(game)
+
+    program = HanoiAgentAstarProgram()
+    agent = Agent(program)
+
+    environment.add_thing(agent)
+    run_environment(environment, agent)
+
+
+print("Uninformed Agent Test:")
+agent_uninformed()
+
+print("\n")
+print("Informed Agent Test:")
+agent_informed()
